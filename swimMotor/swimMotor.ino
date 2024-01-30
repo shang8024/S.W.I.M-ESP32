@@ -1,5 +1,22 @@
 #include "FastLED.h"
+#include <WiFi.h>
+#include "secrets.h"
+
 FASTLED_USING_NAMESPACE
+
+
+#ifndef SECRETS
+//WPA2-Personal
+const char *wifi_ssid = "SWIMtest";
+const char *wifi_pass = "ece516BA3165";
+#endif
+
+WiFiServer server(80); /* Instance of WiFiServer with port number 80 */
+String request;
+WiFiClient client;
+
+int timeout = 0;
+
 
 #if defined(FASTLED_VERSION) && (FASTLED_VERSION < 3001000)
 #warning "Requires FastLED 3.1 or later; check github for latest code."
@@ -7,6 +24,8 @@ FASTLED_USING_NAMESPACE
 
 //#define FASTLED_FORCE_SOFTWARE_SPI
 #define DEBUG_PIN 33
+#define MOTOR_PIN 36
+#define threshold 64
 
 #define DATA_PIN 4
 //#define CLK_PIN   13
@@ -20,23 +39,31 @@ CRGB leds[NUM_LEDS];
 int motor = 0;
 int prevmotor = 0;
 
-int pa = 0;
-int pb = 0;
-int pc = 0;
-
-int pal = 0;
-int pbl = 0;
-int pcl = 0;
-
-int paraw = 0;
-int pbraw = 0;
-int pcraw = 0;
-
+int state = 0;
+int speed = 1;
 
 //boolean debugon = 0;
 boolean debugon = 1;
 
 boolean drawgrat = 1;
+
+int img_height = 12;
+int img_width = 12;
+const unsigned int img[] = {
+  0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00ed1c24, 0x00ed1c24, 0x00ed1c24, 0x00ed1c24, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 
+	0x00000000, 0x00000000, 0x00ed1c24, 0x00ed1c24, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00ed1c24, 0x00ed1c24, 0x00000000, 0x00000000, 
+	0x00000000, 0x00ed1c24, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00ed1c24, 0x00000000, 
+	0x00000000, 0x00ed1c24, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00ed1c24, 0x00000000, 
+	0x00ed1c24, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00ed1c24, 
+	0x00ed1c24, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00ed1c24, 0x00ed1c24, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00ed1c24, 
+	0x00ed1c24, 0x00ed1c24, 0x00000000, 0x00000000, 0x00ed1c24, 0x00000000, 0x00000000, 0x00ed1c24, 0x00000000, 0x00000000, 0x00ed1c24, 0x00ed1c24, 
+	0x00ffffff, 0x00000000, 0x00ed1c24, 0x00ed1c24, 0x00ed1c24, 0x00000000, 0x00000000, 0x00ed1c24, 0x00ed1c24, 0x00ed1c24, 0x00000000, 0x00ffffff, 
+	0x00000000, 0x00ffffff, 0x00000000, 0x00000000, 0x00000000, 0x00ed1c24, 0x00ed1c24, 0x00000000, 0x00000000, 0x00000000, 0x00ffffff, 0x00000000, 
+	0x00000000, 0x00ffffff, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00ffffff, 0x00000000, 
+	0x00000000, 0x00000000, 0x00ffffff, 0x00ffffff, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00ffffff, 0x00ffffff, 0x00000000, 0x00000000, 
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00ffffff, 0x00ffffff, 0x00ffffff, 0x00ffffff, 0x00000000, 0x00000000, 0x00000000, 0x00000000
+};
+int scale = 2;
 
 uint8_t gHue = 0;  // rotating "base color" used by many of the patterns
 
@@ -44,7 +71,6 @@ void setup() {
   delay(1000);  // 3 second delay for recovery
 
   pinMode(DEBUG_PIN, OUTPUT);  //set debug pin as output
-
 
   Serial.begin(115200);
   // tell FastLED about the LED strip configuration
@@ -54,97 +80,88 @@ void setup() {
   // set master brightness control
   FastLED.addLeds<WS2812, DATA_PIN, COLOR_ORDER>(leds, NUM_LEDS);
   FastLED.setBrightness(BRIGHTNESS);
+
+  motor = analogRead(MOTOR_PIN);
+  prevmotor = motor;
+
+  WiFi.disconnect(true);
+  WiFi.mode(WIFI_STA);
+  Serial.print("MAC >> ");
+  Serial.println(WiFi.macAddress());
+  Serial.print("Connecting to: ");
+  Serial.println(ssid);
+  WiFi.begin(ssid, password);
+  while(WiFi.status() != WL_CONNECTED && timeout < 1000000)
+  {
+    Serial.print(".");
+    timeout += 100;
+    delay(100);
+  }
+  if (WiFi.status() != WL_CONNECTED)
+  {
+    Serial.println("Connection Failed!\n");
+    return;
+  }
+  Serial.print("\n");
+  Serial.print("Connected to Wi-Fi ");
+  Serial.println(WiFi.SSID());
+  delay(1000);
+  server.begin(); /* Start the HTTP web Server */
+  Serial.print("Connect to IP Address: ");
+  Serial.print("http://");
+  Serial.println(WiFi.localIP());
+  Serial.print("\n");
 }
 
-
 // List of patterns to cycle through.  Each is defined as a separate function below.
+void stateUpdate(){
+  // read motor value and change 
+  motor = analogRead(MOTOR_PIN);
+  int diff = motor - prevmotor;
+  prevmotor = motor;
+  if (motor < 1964 && motor >1836){
+    return;
+  }
+  if (motor >= 1964) state ++;
+  if (motor <= 1836) state --;
+  // display image based on state, 
+  // Your name or other text should appear forwards when ind increases
+  // The text or image content should display backwards when ind decreases
+  if (state > img_width*speed*scale) state = 0;
+  if (state < 0) state = img_width * speed * scale;
+}
 
+void displayImage(){
+  // for width=1 led stip, display the state-th column of the image
+  int start = (NUM_LEDS - img_height * scale) / 2;
+  int ind = state / (speed * scale);
+  // ind is between 0 and img_width
+  for (int i = 0; i < img_height; i++){
+    // if the pixel is black, do nothing
+    if (img[i * img_width + ind] == 0) continue;
+    // if the pixel is not black, get the color
+    // convert 0x00RRGGBB to RR in deximal
+    int r = (img[i * img_width + ind] >> 16) & 0xFF;
+    int g = (img[i * img_width + ind] >> 8) & 0xFF;
+    int b = img[i * img_width + ind] & 0xFF;
+    
+    // set the color to the corresponding leds
+    for (int j = 0; j < scale; j++){
+      // print in reverse order
+      leds[NUM_LEDS - 1 - (i * scale + j + start)] = CRGB(r, g, b);
+    }
+  }
+}
 
-
-
-
-
+void html(){
+  
+}
 
 void loop() {
   FastLED.clearData();
 
-  //for (int i = 0; i < NUM_LEDS; i++)
-  //{
-  //  leds[i] = 0x0000;
-
-  //}
-  //digitalWrite(DEBUG_PIN, 1);
-
-  pal = pa;
-  pbl = pb;
-  pcl = pc;
-
-  motor = analogRead(36);
-
-  prevmotor = motor;
-  paraw = (((motor + 150) - 2047) * 16) + 2047;  ///not sure why i skippe A0, maybe noise, it's close to SCK
-  //  pbraw = ((analogRead(39)+0));
-  //  pcraw = ((analogRead(34)+0));
-  pbraw = (((motor + 150) - 2047) * 16) + 2047;
-  pcraw = (((motor + 150) - 2047) * 16) + 2047;
-
-  pa = map(paraw + 0, 0, 4095, 0, NUM_LEDS);
-  pb = map(pbraw + 0, 0, 4095, 0, NUM_LEDS);
-  pc = map(pcraw + 0, 0, 4095, 0, NUM_LEDS);
-
-
-
-
-  //pa = int(float(int(analogRead(0)) -512) * 1) + 72;
-  //pb = int(float(int(analogRead(1)) -512) * 1) + 72;
-  //pc = int(float(int(analogRead(2)) -512) * 1) + 72;
-
-  if (pa > (NUM_LEDS - 1)) { pa = (NUM_LEDS - 1); }
-  if (pa < 0) { pa = 0; }
-  if (pb > (NUM_LEDS - 1)) { pb = (NUM_LEDS - 1); }
-  if (pb < 0) { pb = 0; }
-  if (pc > (NUM_LEDS - 1)) { pc = (NUM_LEDS - 1); }
-  if (pc < 0) { pc = 0; }
-
-
-  if (pa == pal) { leds[pa] |= CRGB(255, 0, 0); }
-  if (pb == pbl) { leds[pb] |= CRGB(0, 255, 0); }
-  if (pc == pcl) { leds[pc] |= CRGB(0, 0, 255); }
-
-  if (pa > pal) {
-    for (int f = pal; f < pa; f++) {
-      leds[f] |= CRGB(255, 0, 0);
-    }
-  }
-  if (pa < pal) {
-    for (int f = pa; f < pal; f++) {
-      leds[f] |= CRGB(255, 0, 0);
-    }
-  }
-
-
-  if (pb > pbl) {
-    for (int f = pbl; f < pb; f++) {
-      leds[f] |= CRGB(0, 255, 0);
-    }
-  }
-  if (pb < pbl) {
-    for (int f = pb; f < pbl; f++) {
-      leds[f] |= CRGB(0, 255, 0);
-    }
-  }
-
-  if (pc > pcl) {
-    for (int f = pcl; f < pc; f++) {
-      leds[f] |= CRGB(0, 0, 255);
-    }
-  }
-  if (pc < pcl) {
-    for (int f = pc; f < pcl; f++) {
-      leds[f] |= CRGB(0, 0, 255);
-    }
-  }
-
+  stateUpdate();
+  displayImage();
 
   if (drawgrat) {
     for (int g = 0; g < 72; g = g + 11) {
@@ -153,21 +170,8 @@ void loop() {
     }
   }
 
-  //digitalWrite(DEBUG_PIN, 0);
-
-
   //fill_rainbow( leds, NUM_LEDS, gHue, 5); gHue=gHue+1;
   FastLED.show();
   // insert a delay to keep the framerate modest
-  //FastLED.delay(10);
-
-
-  if (debugon) {
-    Serial.print(paraw);  //1895
-    Serial.print("\t");
-    Serial.print(pbraw);
-    Serial.print("\t");
-    Serial.print(pcraw);
-    Serial.print("\n");
-  }
+  FastLED.delay(10);
 }
