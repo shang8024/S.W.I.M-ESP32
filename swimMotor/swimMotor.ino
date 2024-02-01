@@ -3,14 +3,16 @@
 #include "secrets.h"
 #include "charMap.h"
 #include <HTTPClient.h>
+#include "esp_wpa2.h"
 
 FASTLED_USING_NAMESPACE
 
-
 #ifndef SECRETS
 //WPA2-Personal
-const char *ssid = "SWIMtest";
-const char *pass = "ece516BA3165";
+const char *ssid = "Jiale";
+const char *pass = "12345678";
+const char *username ="";
+const static char* test_root_ca PROGMEM = "";
 #endif
 
 WiFiServer server(80); /* Instance of WiFiServer with port number 80 */
@@ -49,12 +51,13 @@ int prevmotor = 0;
 int state = 0;
 int total_state = 0;
 int speed = 2;
-int space = 4; // gap between repeating image/text
+int space = 2; // gap between repeating image/text
 
 //boolean debugon = 0;
 boolean debugon = 1;
 
 boolean drawgrat = 1;
+boolean autodraw = 0;
 int scale = 2;
 
 //values for the image
@@ -123,23 +126,28 @@ void setup() {
 
   if (display_mode == 0) total_state = (img_width*scale+space)*speed;
   else total_state = (string_length * (FONT_WIDTH + FONT_GAP) * scale + space)*speed;
-
-  WiFi.disconnect(true);
+#ifndef SECRETS
   WiFi.mode(WIFI_STA);
+#endif
+  WiFi.disconnect(true);
   Serial.print("MAC >> ");
   Serial.println(WiFi.macAddress());
   Serial.print("Connecting to: ");
   Serial.println(ssid);
-  WiFi.begin(ssid, pass);
+#ifndef SECRETS
+  WiFi.begin(ssid,pss);
+#else
+  WiFi.begin(ssid, WPA2_AUTH_PEAP, identity, username, pass);
+#endif
   int tmp = 0;
-  while((WiFi.status() != WL_CONNECTED && timeout < 1000000)||tmp<NUM_LEDS)
+  while((WiFi.status() != WL_CONNECTED && timeout < 1000)||tmp<NUM_LEDS)
   {
     FastLED.clearData();
     Serial.print(".");
     timeout += 10;
     leds[tmp] |= CRGB(255,255,255);
     tmp++;
-    if(tmp>=NUM_LEDS && WiFi.status() != WL_CONNECTED && timeout < 1000000) tmp=0;
+    if(tmp>=NUM_LEDS && WiFi.status() != WL_CONNECTED && timeout < 1000) tmp=0;
     FastLED.show();
     delay(10);
   }
@@ -163,18 +171,22 @@ void setup() {
 // List of patterns to cycle through.  Each is defined as a separate function below.
 void stateUpdate(){
   if (total_state <= 0) return;
-  // read motor value and change 
-  motor = analogRead(MOTOR_PIN);
-  int diff = motor - prevmotor;
-  prevmotor = motor;
-  if (motor < 1964 && motor >1836) return;
-  if (motor >= 1964) state ++;
-  if (motor <= 1836) state --;
-  // display image based on state, 
-  // Your name or other text should appear forwards when ind increases
-  // The text or image content should display backwards when ind decreases
-  if (state >= total_state) state = 0;
-  if (state < 0) state = total_state - 1;
+  if (autodraw){
+    state ++;
+  }else {
+    // read motor value and change 
+    motor = analogRead(MOTOR_PIN);
+    int diff = motor - prevmotor;
+    prevmotor = motor;
+    if (motor < 1964 && motor >1836) return;
+    if (motor >= 1964) state ++;
+    if (motor <= 1836) state --;
+  }
+      // display image based on state, 
+    // Your name or other text should appear forwards when ind increases
+    // The text or image content should display backwards when ind decreases
+    if (state >= total_state) state = 0;
+    if (state < 0) state = total_state - 1;
 }
 
 void displayImage(){
@@ -202,7 +214,6 @@ void displayImage(){
 void displayGrat(){
   if (drawgrat) {
     for (int g = 0; g < 72; g = g + 11) {
-      //    leds[g+3]|=CRGB(75,0,75);
       leds[g + 2] |= CRGB(75, 0, 75);  // center the grat
     }
   }
@@ -299,6 +310,13 @@ void html(){
   {
     client.print("<p><a href=\"/Toggle\n\"><button class=\"button button_OFF\">Display Image</button></a></p>"); 
   } 
+  if(autodraw)
+  {
+    client.print("<p><a href=\"/Auto\n\"><button class=\"button button_ON\">Auto Off</button></a></p>"); 
+  } else
+  {
+    client.print("<p><a href=\"/Auto\n\"><button class=\"button button_OFF\">Auto On</button></a></p>"); 
+  } 
   client.println("</body>");
  client.println("</html>");    
 }
@@ -337,11 +355,21 @@ String extractString(String req, char* str){
   start += strlen(str);
   int end = req.indexOf("&", start);
   if (end == -1) end = req.indexOf(" ", start);
-  return req.substring(start, end);
+  String tmp = req.substring(start, end);
+  //replace + with space
+  tmp.replace("+", " ");
+  //for each %xy, replace with corresponding char
+  int pos = 0;
+  while((pos = tmp.indexOf("%", pos)) != -1)
+  {
+    char c = strtol(tmp.substring(pos+1, pos+3).c_str(), NULL, 16);
+    tmp.replace(tmp.substring(pos, pos+3), String(c));
+    pos++;
+  }
+  return tmp;
 }
 
 void loop() {
-//digitalWrite(DEBUG_PIN, 0);
   if(WiFi.status() != WL_CONNECTED){
     display();
     return;
@@ -395,6 +423,11 @@ void loop() {
         if (request.indexOf("GET /Toggle") != -1)
         {
           toggleDisplay();
+        }
+        if (request.indexOf("GET /Auto") != -1)
+        {
+          autodraw = !autodraw;
+          state = 0;
         }
         html();
         break;
