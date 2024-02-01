@@ -83,8 +83,8 @@ int auto_delay = 20;
 //values for text
 int string_length = 8;
 char string[MAX_STRING_LENGTH] = "ECE 516";
-int font_color[3] = {255, 255, 255};
-int grad_end[3] = {255, 255, 255};
+int font_color[3] = {243, 57, 166};
+int grad_end[3] = {43, 225, 238};
 //TBD: font
 //TBD: gradient
 
@@ -451,6 +451,7 @@ void loop() {
             string_length = tmp.length();
             Serial.println(string);
             if(display_mode == 0) toggleDisplay();
+            else total_state = (string_length * (FONT_WIDTH + FONT_GAP) * scale + space)*speed;
           }
           if (scale>=3 || autodraw) speed=1;
           else speed=2;
