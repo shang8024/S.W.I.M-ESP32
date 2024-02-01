@@ -84,6 +84,7 @@ int auto_delay = 20;
 int string_length = 8;
 char string[MAX_STRING_LENGTH] = "ECE 516";
 int font_color[3] = {255, 255, 255};
+int grad_end[3] = {255, 255, 255};
 //TBD: font
 //TBD: gradient
 
@@ -143,14 +144,14 @@ void setup() {
   WiFi.begin(ssid, WPA2_AUTH_PEAP, identity, username, pass);
 #endif
   int tmp = 0;
-  while((WiFi.status() != WL_CONNECTED && timeout < 1000)||tmp<NUM_LEDS)
+  while((WiFi.status() != WL_CONNECTED && timeout < 10000)||tmp<NUM_LEDS)
   {
     FastLED.clearData();
     Serial.print(".");
     timeout += 10;
     leds[tmp] |= CRGB(255,255,255);
     tmp++;
-    if(tmp>=NUM_LEDS && WiFi.status() != WL_CONNECTED && timeout < 1000) tmp=0;
+    if(tmp>=NUM_LEDS && WiFi.status() != WL_CONNECTED && timeout < 10000) tmp=0;
     FastLED.show();
     delay(10);
   }
@@ -169,6 +170,8 @@ void setup() {
   Serial.print("http://");
   Serial.println(WiFi.localIP());
   Serial.print("\n");
+  if (scale>=3 || autodraw) speed=1;
+  else speed=2;
 }
 
 // List of patterns to cycle through.  Each is defined as a separate function below.
@@ -229,6 +232,11 @@ void displayChar(char x,int offset,int start){
   // 0x7e - 0x20 = 0x5e -> 94 characters
   if (ind == 0) return;
   if (ind > char_map_size || ind < 0) ind = char_map_size;
+  // calculate color based on gradient from font_color to grad_end
+  // the percentage of the gradient is based on the state/total_state
+  int r = font_color[0] + (grad_end[0] - font_color[0]) * state / total_state;
+  int g = font_color[1] + (grad_end[1] - font_color[1]) * state / total_state;
+  int b = font_color[2] + (grad_end[2] - font_color[2]) * state / total_state;
   for (int i = 0; i < FONT_HEIGHT; i++){
     // if the pixel is black, do nothing
     unsigned int y = charMap[ind-1][i];
@@ -240,7 +248,7 @@ void displayChar(char x,int offset,int start){
     // set the color to the corresponding leds
     for (int j = 0; j < scale; j++){
       // print in reverse order
-      leds[NUM_LEDS - 1 - (i * scale + j + start)] |= CRGB(font_color[0], font_color[1], font_color[2]);
+      leds[NUM_LEDS - 1 - (i * scale + j + start)] |= CRGB(r, g, b);
     }
   }  
 }
@@ -307,6 +315,14 @@ void html(){
       for(int i = 0; i < 3; i++)
       {
         client.printf("%x", font_color[i]);
+        if(font_color[i] == 0) client.print("0");
+      }
+      client.println("\"/>");
+      client.print("<input type=\"color\" id=\"gradend\" name=\"gradend\" value=\"#");
+      for(int i = 0; i < 3; i++)
+      {
+        client.printf("%x", grad_end[i]);
+        if(grad_end[i] == 0) client.print("0");
       }
       client.println("\" /></p>");
     client.println("<p><a><button type=\"submit\" class=\"button button_ON\">Send</button></a></p>");
@@ -420,6 +436,14 @@ void loop() {
               font_color[i] = strtol(tmp.substring(i*2, i*2+2).c_str(), NULL, 16);
             }
           }
+          tmp = extractString(request, "gradend=%23");
+          if (tmp.length() > 0)
+          {
+            for(int i = 0; i < 3; i++)
+            {
+              grad_end[i] = strtol(tmp.substring(i*2, i*2+2).c_str(), NULL, 16);
+            }
+          }
           tmp = extractString(request, "text=");
           if (tmp.length() > 0 && tmp.length() < MAX_STRING_LENGTH)
           {
@@ -428,6 +452,8 @@ void loop() {
             Serial.println(string);
             if(display_mode == 0) toggleDisplay();
           }
+          if (scale>=3 || autodraw) speed=1;
+          else speed=2;
           state = 0;
         }
 
