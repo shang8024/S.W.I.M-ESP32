@@ -78,11 +78,14 @@ unsigned int img[256] = {
 	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00ffffff, 0x00ffffff, 0x00ffffff, 0x00ffffff, 0x00000000, 0x00000000, 0x00000000, 0x00000000
 };
 
+int auto_delay = 20;
+
 //values for text
 int string_length = 8;
 char string[MAX_STRING_LENGTH] = "ECE 516";
 int font_color[3] = {255, 255, 255};
 //TBD: font
+//TBD: gradient
 
 uint8_t gHue = 0;  // rotating "base color" used by many of the patterns
 
@@ -173,6 +176,7 @@ void stateUpdate(){
   if (total_state <= 0) return;
   if (autodraw){
     state ++;
+    delay(auto_delay);
   }else {
     // read motor value and change 
     motor = analogRead(MOTOR_PIN);
@@ -294,6 +298,10 @@ void html(){
       client.print("<input type=\"number\" id=\"gap\" name=\"gap\" value=\"");
       client.print(space);
       client.println("\" required min=\"0\" max=\"10\"></p>");
+    client.println("<p><label for=\"delay\">Delay<small>(for auto display)</small>:</label>");
+      client.print("<input type=\"number\" id=\"delay\" name=\"delay\" value=\"");
+      client.print(auto_delay);
+      client.println("\" required min=\"0\" max=\"100\"></p>");
     client.println("<p><label for=\"color\">Font Color:</label>");
       client.print("<input type=\"color\" id=\"color\" name=\"color\" value=\"#");
       for(int i = 0; i < 3; i++)
@@ -400,6 +408,9 @@ void loop() {
 
           tmp = extractString(request, "gap=");
           if (tmp.length() > 0) space = tmp.toInt();
+
+          tmp = extractString(request, "delay=");
+          if (tmp.length() > 0) auto_delay = tmp.toInt();
 
           tmp = extractString(request, "color=%23");
           if (tmp.length() > 0)
