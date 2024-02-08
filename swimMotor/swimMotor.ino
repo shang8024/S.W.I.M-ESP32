@@ -9,10 +9,8 @@ FASTLED_USING_NAMESPACE
 
 #ifndef SECRETS
 //WPA2-Personal
-const char *ssid = "your_ssid";
-const char *pass = "your_pass";
-// const char *username ="";
-// const static char* test_root_ca PROGMEM = "";
+const char *ssid = "ssid";
+const char *pass = "pass";
 #endif
 
 WiFiServer server(80); /* Instance of WiFiServer with port number 80 */
@@ -91,15 +89,21 @@ int grad_end[3] = {43, 225, 238};
 
 uint8_t gHue = 0;  // rotating "base color" used by many of the patterns
 
-boolean display_mode = 1; // 0 for image, 1 for text
+boolean display_mode = 0; // 0 for image, 1 for text
 
 void startAnime(){
   FastLED.clearData();
   // from center of leds, gradually turn on leds
   for (int i =0; i<NUM_LEDS/2;i++){
     FastLED.show();
-    leds[NUM_LEDS/2-i] |= CRGB(255,255,255);
-    leds[NUM_LEDS/2+1+i] |= CRGB(255,255,255);
+    if (WiFi.status() != WL_CONNECTED){
+      leds[NUM_LEDS/2-i] |= CRGB(255,0,0);
+      leds[NUM_LEDS/2+1+i] |= CRGB(255,0,0);
+    }
+    else{
+      leds[NUM_LEDS/2-i] |= CRGB(255,255,255);
+      leds[NUM_LEDS/2+1+i] |= CRGB(255,255,255);
+    }
     FastLED.show();
     delay(10);
   }
@@ -164,6 +168,7 @@ void setup() {
   if (WiFi.status() != WL_CONNECTED)
   {
     Serial.println("Connection Failed!\n");
+    startAnime();
     return;
   }
   Serial.print("\n");
@@ -203,7 +208,7 @@ void displayImage(){
   if (total_state <= 0) return;
   if (state >= total_state - space*speed) return;
   // for width=1 led stip, display the state-th column of the image
-  int start = (NUM_LEDS - img_height * scale) / 2;
+  int start = (NUM_LEDS - img_height) / 2;
   int ind = state / speed / scale;
   // ind is between 0 and img_width
   for (int i = 0; i < img_height; i++){
