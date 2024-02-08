@@ -278,7 +278,6 @@ void stateUpdate(){
     // The text or image content should display backwards when ind decreases
     if (state >= total_state) state = 0;
     if (state < 0) state = total_state - 1;
-  Serial.println(state);
 }
 
 void displayImage(){
