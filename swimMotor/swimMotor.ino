@@ -10,8 +10,8 @@ FASTLED_USING_NAMESPACE
 
 #ifndef SECRETS
 //WPA2-Personal
-const char *ssid = "BELL719";
-const char *pass = "2FCC667EADAA";
+const char *ssid = "your_ssid";
+const char *pass = "your_pass";
 // const char *username ="";
 // const static char* test_root_ca PROGMEM = "";
 #endif
