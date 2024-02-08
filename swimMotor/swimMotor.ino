@@ -4,20 +4,22 @@
 #include "charMap.h"
 #include <HTTPClient.h>
 #include "esp_wpa2.h"
+#include "ESPAsyncWebServer.h"
 
 FASTLED_USING_NAMESPACE
 
 #ifndef SECRETS
 //WPA2-Personal
-const char *ssid = "Jiale";
-const char *pass = "12345678";
-const char *username ="";
-const static char* test_root_ca PROGMEM = "";
+const char *ssid = "BELL719";
+const char *pass = "2FCC667EADAA";
+// const char *username ="";
+// const static char* test_root_ca PROGMEM = "";
 #endif
 
 WiFiServer server(80); /* Instance of WiFiServer with port number 80 */
 String request;
 WiFiClient client;
+
 
 int timeout = 0;
 
@@ -128,8 +130,11 @@ void setup() {
   motor = analogRead(MOTOR_PIN);
   prevmotor = motor;
 
-  if (display_mode == 0) total_state = (img_width*scale+space)*speed;
+  if (display_mode == 0) total_state = (img_width+space)*speed;
   else total_state = (string_length * (FONT_WIDTH + FONT_GAP) * scale + space)*speed;
+  if (scale>=3 || autodraw) speed=1;
+  else speed=2;
+
 #ifndef SECRETS
   WiFi.mode(WIFI_STA);
 #endif
@@ -139,12 +144,12 @@ void setup() {
   Serial.print("Connecting to: ");
   Serial.println(ssid);
 #ifndef SECRETS
-  WiFi.begin(ssid,pss);
+  WiFi.begin(ssid,pass);
 #else
   WiFi.begin(ssid, WPA2_AUTH_PEAP, identity, username, pass);
 #endif
   int tmp = 0;
-  while((WiFi.status() != WL_CONNECTED && timeout < 10000)||tmp<NUM_LEDS)
+  while((WiFi.status() != WL_CONNECTED && timeout < 10000) || tmp<NUM_LEDS)
   {
     FastLED.clearData();
     Serial.print(".");
@@ -155,6 +160,7 @@ void setup() {
     FastLED.show();
     delay(10);
   }
+  Serial.print("\n");
   
   if (WiFi.status() != WL_CONNECTED)
   {
@@ -170,8 +176,6 @@ void setup() {
   Serial.print("http://");
   Serial.println(WiFi.localIP());
   Serial.print("\n");
-  if (scale>=3 || autodraw) speed=1;
-  else speed=2;
 }
 
 // List of patterns to cycle through.  Each is defined as a separate function below.
@@ -289,6 +293,8 @@ void html(){
   client.println("<body>");
   client.println("<h2>ECE516 - S.W.I.M</h2>");
   client.println("<p>Send a message to ESP32 to change the display content</p>");
+  client.print;n("<hr/>");
+  
   client.println("<form action=\"/Mes\n\">");
     client.println("<p><label for=\"text\">Text<small>(optional)</small>:</label>");
       client.print("<input type=\"text\" id=\"text\" name=\"text\" placeholder=\"ECE 516\" maxlength=\"25\" value=\"");
@@ -327,6 +333,13 @@ void html(){
       client.println("\" /></p>");
     client.println("<p><a><button type=\"submit\" class=\"button button_ON\">Send</button></a></p>");
   client.println("</form>");
+  client.println("<hr/>");
+  client.println("<form method=\"post\">");
+    client.println("<p><label for=\"img\">Image</label>");
+    client.println("<input type=\"file\" id=\"img\" name=\"img\" accept=\"image/*\"></p>");
+    client.println("<p><a><button type=\"submit\">Upload</button></a></p>");
+  client.println("</form>");
+  client.println("<hr/>");
   if(display_mode == 0)
   {
     client.print("<p><a href=\"/Toggle\n\"><button class=\"button button_ON\">Display Text</button></a></p>"); 
@@ -353,7 +366,7 @@ void toggleDisplay(){
   } else
   {
     Serial.println("Printing Image\n");
-    total_state = (img_width*scale+space)*speed;
+    total_state = (img_width+space)*speed;
   }
   display_mode = !display_mode;
   state = 0;
@@ -466,6 +479,9 @@ void loop() {
         {
           autodraw = !autodraw;
           state = 0;
+        }
+        if (request.indexOf("POST") != -1){
+          Serial.println(request);
         }
         html();
         break;
