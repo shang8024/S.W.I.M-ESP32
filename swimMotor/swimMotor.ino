@@ -293,21 +293,13 @@ void html(){
   client.println("<body>");
   client.println("<h2>ECE516 - S.W.I.M</h2>");
   client.println("<p>Send a message to ESP32 to change the display content</p>");
-  client.print;n("<hr/>");
-  
-  client.println("<form action=\"/Mes\n\">");
-    client.println("<p><label for=\"text\">Text<small>(optional)</small>:</label>");
-      client.print("<input type=\"text\" id=\"text\" name=\"text\" placeholder=\"ECE 516\" maxlength=\"25\" value=\"");
-      client.print(string);
-      client.println("\"></p>");
+  client.println("<hr/>");
+  client.println("<form action=\"/Config\n\">");
+    client.println("<h4>Change Configuration <a><button type=\"submit\">Send</button></a></h4>");
     client.print("<p><input type=\"checkbox\" id=\"grat\" name=\"grat\" value=\"On\"");
     if(drawgrat) client.print("checked");
     client.println(">");
       client.println("<label for=\"grat\">Display Grat</label><br></p>");
-    client.println("<p><label for=\"scale\">Scale:</label>");
-      client.print("<input type=\"number\" id=\"scale\" name=\"scale\" value=\"");
-      client.print(scale);
-      client.println("\" required min=\"1\" max=\"6\"></p>");
     client.println("<p><label for=\"gap\">Gap<small>(between repeating display)</small>:</label>");
       client.print("<input type=\"number\" id=\"gap\" name=\"gap\" value=\"");
       client.print(space);
@@ -316,6 +308,18 @@ void html(){
       client.print("<input type=\"number\" id=\"delay\" name=\"delay\" value=\"");
       client.print(auto_delay);
       client.println("\" required min=\"0\" max=\"100\"></p>");
+  client.println("</form>");
+  client.println("<hr/>");
+  client.println("<form action=\"/Mes\n\">");
+    client.println("<h4>Change Text Display <a><button type=\"submit\">Send</button></a></h4>");
+    client.println("<p><label for=\"text\">Text<small>(optional)</small>:</label>");
+      client.print("<input type=\"text\" id=\"text\" name=\"text\" placeholder=\"ECE 516\" maxlength=\"25\" value=\"");
+      client.print(string);
+      client.println("\"></p>");
+    client.println("<p><label for=\"scale\">Scale:</label>");
+      client.print("<input type=\"number\" id=\"scale\" name=\"scale\" value=\"");
+      client.print(scale);
+      client.println("\" required min=\"1\" max=\"6\"></p>");
     client.println("<p><label for=\"color\">Font Color:</label>");
       client.print("<input type=\"color\" id=\"color\" name=\"color\" value=\"#");
       for(int i = 0; i < 3; i++)
@@ -331,13 +335,6 @@ void html(){
         if(grad_end[i] == 0) client.print("0");
       }
       client.println("\" /></p>");
-    client.println("<p><a><button type=\"submit\" class=\"button button_ON\">Send</button></a></p>");
-  client.println("</form>");
-  client.println("<hr/>");
-  client.println("<form method=\"post\">");
-    client.println("<p><label for=\"img\">Image</label>");
-    client.println("<input type=\"file\" id=\"img\" name=\"img\" accept=\"image/*\"></p>");
-    client.println("<p><a><button type=\"submit\">Upload</button></a></p>");
   client.println("</form>");
   client.println("<hr/>");
   if(display_mode == 0)
@@ -359,6 +356,8 @@ void html(){
 }
 
 void toggleDisplay(){
+  if (scale>=3 || autodraw) speed=1;
+  else speed=2;
   if (display_mode == 0)
   {
     Serial.println("Printing Text\n");
@@ -428,18 +427,23 @@ void loop() {
       if (c == '\n')
       {
         Serial.println(request);
-        if (request.indexOf("GET /Mes") != -1)
+        String tmp;
+        if (request.indexOf("GET /Config") != -1)
         {
           if(request.indexOf("grat") != -1) drawgrat = 1;
           else drawgrat = 0;
-          String tmp = extractString(request, "scale=");
-          if (tmp.length() > 0) scale = tmp.toInt();
-
           tmp = extractString(request, "gap=");
           if (tmp.length() > 0) space = tmp.toInt();
 
           tmp = extractString(request, "delay=");
           if (tmp.length() > 0) auto_delay = tmp.toInt();
+
+          state = 0;
+        }
+        if (request.indexOf("GET /Mes") != -1)
+        {
+          tmp = extractString(request, "scale=");
+          if (tmp.length() > 0) scale = tmp.toInt();
 
           tmp = extractString(request, "color=%23");
           if (tmp.length() > 0)
@@ -479,9 +483,8 @@ void loop() {
         {
           autodraw = !autodraw;
           state = 0;
-        }
-        if (request.indexOf("POST") != -1){
-          Serial.println(request);
+          if (scale>=3 || autodraw) speed=1;
+          else speed=2;
         }
         html();
         break;
