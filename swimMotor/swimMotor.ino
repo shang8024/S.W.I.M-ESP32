@@ -57,7 +57,7 @@ boolean debugon = 1;
 
 boolean drawgrat = 1;
 boolean autodraw = 0;
-int scale = 4;
+int scale = 3;
 
 //values for the image
 // int img_height = 12;
@@ -165,7 +165,7 @@ int grad_end[3] = {43, 225, 238};
 
 uint8_t gHue = 0;  // rotating "base color" used by many of the patterns
 
-boolean display_mode = 1; // 0 for image, 1 for text
+boolean display_mode = 0; // 0 for image, 1 for text
 
 void startAnime(){
   FastLED.clearData();
@@ -380,7 +380,7 @@ void html(){
     client.println("<p><label for=\"gap\">Gap<small>(between repeating display)</small>:</label>");
       client.print("<input type=\"number\" id=\"gap\" name=\"gap\" value=\"");
       client.print(space);
-      client.println("\" required min=\"0\" max=\"10\"></p>");
+      client.println("\" required min=\"0\" max=\"100\"></p>");
     client.println("<p><label for=\"delay\">Delay<small>(for auto display)</small>:</label>");
       client.print("<input type=\"number\" id=\"delay\" name=\"delay\" value=\"");
       client.print(auto_delay);
