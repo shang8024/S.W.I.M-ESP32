@@ -6,7 +6,7 @@ def polarCoorImage(source):
 
     # --- ensure image is of the type float ---
     img = source.astype(np.float32)
-    img = np.abs(img - 255)
+    # img = np.abs(img - 255) //why revert the color???
     # --- the following holds the square root of the sum of squares of the image dimensions ---
     # --- this is done so that the entire width/height of the original image is used to express the complete circular range of the resulting polar image ---
     value = np.sqrt(((img.shape[0] / 2.0) ** 2.0) + ((img.shape[1] / 2.0) ** 2.0))
@@ -26,12 +26,11 @@ def polarCoorImage(source):
     string_img = string_img.replace("[", "{")
     string_img = string_img.replace("]", "}")
     #print(string_img)
-    print(len(polar_image))
-    print(len(polar_image[0]))
-    print(len(polar_image[0][0]))
+    # print(len(polar_image))
+    # print(len(polar_image[0]))
+    # print(len(polar_image[0][0]))
 
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
+    # cv2.waitKey(0)
     return string_img
 
 def extractImages(vidcap,isGif=False):
@@ -40,10 +39,9 @@ def extractImages(vidcap,isGif=False):
     success = True
     string = ""
     while success:
-        if not isGif:
-            vidcap.set(cv2.CAP_PROP_POS_MSEC,(count*1000))    # 1 frame per second
+        vidcap.set(cv2.CAP_PROP_POS_MSEC,(count*100))    # 1 frame per second
         success,image = vidcap.read()
-        print ('Read a new frame: ', success)
+        # print ('Read a new frame: ', success)
         if not success:
             break
         string = string + polarCoorImage(image)
@@ -51,8 +49,8 @@ def extractImages(vidcap,isGif=False):
         string = string + ","
     # cut the last comma
     string = string[:-1]
-    string = "int img["+count+"][row][col][3] = {" + string
-    string = string + "};"
+    print('Total frames: ',count)
+    return string,count
 
 def checkFile(fileName):
     try:
@@ -61,30 +59,54 @@ def checkFile(fileName):
     except IOError:
         print("File not accessible")
         sys.exit()
+def clearAll(f):
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+    f.close()
+    sys.exit()
 
 
 if __name__ == "__main__":
+    if len(sys.argv) < 1:
+        print("Please provide the file name")
+        sys.exit()
     fileName=sys.argv[1]
     # check if it is a valid file
     checkFile(fileName)
+    if len(sys.argv) > 2 and sys.argv[2] is not None:
+        f = open(str(sys.argv[2])+".h", "w")
+    else:
+        f = open(str(fileName[:-4])+"_.txt", "w")
+    f.write("#define polarImage\n")
+    f.write("const int row = 72;\n")
+    f.write("const int col = 69;\n")
     # check if it is a image or gif or vedio by checking the extension
     if fileName[-4:] == ".jpg" or fileName[-4:] == ".png":
         try:
             source = cv2.imread(fileName, 1)
-            f = open(str(fileName)+"_.txt", "w")
+            f.write("const int total_frame=1;\n")
             file_string = "int img[1][row][col][3] = {"+polarCoorImage(source)
             file_string = file_string + "};"
             f.write(file_string)
-            f.close()
         except:
             print("Error in reading the image")
+            clearAll(f)
     elif fileName[-4:] == ".gif" or fileName[-4:] == ".mp4":
+        print(fileName)
         try:
-            source = cv2.VideoCapture(fileName, fileName[-4:] == ".gif")
-            f = open(str(fileName)+"_.txt", "w")
-            f.write(extractImages(source))
-            f.close()
+            source = cv2.VideoCapture(fileName)
+            fileName = fileName[:-4]
+            file_string,frame_count = extractImages(source)
+            result = "const int total_frame="+str(frame_count)+";\n"
+            result = result+ "int img["+str(frame_count)+"][row][col][3] = {"
+            result = result+ file_string
+            result = result + "};"
+            f.write(result)
         except:
             print("Error in reading the video")
-    else:
-        print("Invalid file")
+            clearAll(f)
+    print("Done")
+    f.close()
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+    

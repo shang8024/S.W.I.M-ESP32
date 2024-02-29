@@ -1,4 +1,5 @@
 #include "FastLED.h"
+#include "polarImage.h"
 
 FASTLED_USING_NAMESPACE
 
@@ -33,20 +34,22 @@ boolean debugon = 1;
 
 boolean drawgrat = 1;
 
+#ifndef POLAR_IMAGE
 const int row = 72;
 const int col = 69;
-const int total_frame = 1;
+const int total_frame = 0;
+//defining the polar coordinate image array
+int img[total_frame][row][col][3] = {};
+#endif
 
 int state = 0;
 int frame = 0;
 
-int pos = 0;
 unsigned long delayStart = 0;
 
 
 
-//defining the polar coordinate image array
-int img[total_frame][row][col][3] = {};
+
 
 
 int QEM[16] = { 0, -1, 1, 2, 1, 0, 2, -1, -1, 2, 0, 1, 2, 1, -1, 0 };  // Quadrature Encoder Matrix
@@ -83,6 +86,18 @@ void stateUpdate() {
   else if (state >= MAX_STATES) state = 0;
 }
 
+void rawDisplay(){
+  int pos = state * 72 / MAX_STATES;
+  leds[pos] = CRGB(255, 255, 255);
+}
+
+void displayPolarImages(){
+  int pos = state * col / MAX_STATES;
+  for (int i = 0; i < row; i++) {
+    leds[i] = CRGB(img[frame][i][pos][2], img[frame][i][pos][1], img[frame][i][pos][0]);
+  }
+}
+
 void setup() {
   delay(1000);  // 3 second delay for recovery
 
@@ -111,8 +126,11 @@ void loop() {
     delayStart = millis();
   }
 
-  pos = state * 72 / MAX_STATES;
-  leds[pos] = CRGB(255, 255, 255);
+  if(total_frame == 0){
+    rawDisplay();
+  }else{
+    displayPolarImages();
+  }
 
 
 
