@@ -34,15 +34,18 @@ def polarCoorImage(source):
     cv2.destroyAllWindows()
     return string_img
 
-def extractImages(vidcap):
+def extractImages(vidcap,isGif=False):
     count = 0
     success,image = vidcap.read()
     success = True
     string = ""
     while success:
-        vidcap.set(cv2.CAP_PROP_POS_MSEC,(count*1000))    # added this line 
+        if not isGif:
+            vidcap.set(cv2.CAP_PROP_POS_MSEC,(count*1000))    # 1 frame per second
         success,image = vidcap.read()
         print ('Read a new frame: ', success)
+        if not success:
+            break
         string = string + polarCoorImage(image)
         count = count + 1
         string = string + ","
@@ -77,7 +80,7 @@ if __name__ == "__main__":
             print("Error in reading the image")
     elif fileName[-4:] == ".gif" or fileName[-4:] == ".mp4":
         try:
-            source = cv2.VideoCapture(fileName)
+            source = cv2.VideoCapture(fileName, fileName[-4:] == ".gif")
             f = open(str(fileName)+"_.txt", "w")
             f.write(extractImages(source))
             f.close()
