@@ -16,6 +16,7 @@ def polarCoorImage(source):
     polar_image = polar_image.astype(np.uint8)
     polar_image = polar_image[:, 3:75]
     # rotate the image
+    polar_image = cv2.convertScaleAbs(polar_image, alpha=2)
     polar_image = cv2.rotate(polar_image, cv2.ROTATE_90_COUNTERCLOCKWISE)
 
     cv2.imshow("Polar Image", polar_image)
@@ -94,8 +95,8 @@ if __name__ == "__main__":
         try:
             source = cv2.imread(fileName, 1)
             f.write("const int total_frame=1;\n")
-            file_string = "unsigned int img0[row][col] = {"+polarCoorImage(source)
-            file_string = file_string + "};\n"
+            file_string = "unsigned int img0[row][col] = "+polarCoorImage(source)
+            file_string = file_string + ";\n"
             f.write(file_string)
             file_string = "unsigned int *frames[1] = {&img0[0][0]};"
             f.write(file_string)

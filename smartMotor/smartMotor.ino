@@ -141,11 +141,11 @@ void loop() {
 
 
 
-  if (drawgrat) {
-    for (int g = 0; g < 72; g = g + 11) {
-      leds[g + 2] |= CRGB(75, 0, 75);  // center the grat
-    }
-  }
+  // if (drawgrat) {
+  //   for (int g = 0; g < 72; g = g + 11) {
+  //     leds[g + 2] |= CRGB(75, 0, 75);  // center the grat
+  //   }
+  // }
 
 
   FastLED.show();
