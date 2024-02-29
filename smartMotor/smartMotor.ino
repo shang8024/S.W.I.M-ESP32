@@ -15,7 +15,7 @@ FASTLED_USING_NAMESPACE
 #define COLOR_ORDER GRB
 #define NUM_LEDS 72
 CRGB leds[NUM_LEDS];
-#define INNER_R 4  //76*76 image
+#define INNER_R 3  //75*75 image
 
 #define threshold 1023
 #define MAX_STATES 484
