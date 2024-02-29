@@ -27,21 +27,11 @@ CRGB leds[NUM_LEDS];
 int pa = 0;
 int pb = 0;
 int pc = 0;
-int pal = 0;
-int pbl = 0;
-int pcl = 0;
 
 //boolean debugon = 0;
 boolean debugon = 1;
-long va = 0;
-long vb = 0;
-long vc = 0;
-long theta = 0;
 
 boolean drawgrat = 1;
-
-uint8_t gHue = 0;  // rotating "base color" used by many of the patterns
-
 
 const int row = 72;
 const int col = 69;
@@ -49,9 +39,6 @@ const int total_frame = 1;
 
 int state = 0;
 int frame = 0;
-
-
-
 
 int pos = 0;
 unsigned long delayStart = 0;
