@@ -120,7 +120,7 @@ void loop() {
 
   stateUpdate();
 
-  if (total_frame > 0 && (millis() - delayStart) > 10000) {
+  if (total_frame > 0 && (millis() - delayStart) > 1000) {
     frame++;
     if (frame >= total_frame) frame = 0;
     delayStart = millis();
