@@ -40,6 +40,7 @@ const int col = 75;
 const int total_frame = 0;
 //defining the polar coordinate image array, 75*75 pixels, with inner R 3
 unsigned int img[row][col] = {};
+unsigned int *frames[1] = {};
 #endif
 
 int state = 0;
@@ -93,10 +94,12 @@ void rawDisplay(){
 
 void displayPolarImages(){
   int pos = state * col / MAX_STATES;
+  unsigned int* cur_img = frames[frame];
   for (int i = 0; i < row; i++) {
-    int b = (img[frame][i][pos] >> 16) & 0xFF;
-    int g = (img[frame][i][pos] >> 8) & 0xFF;
-    int r = img[frame][i][pos] & 0xFF;
+    unsigned int color = *(cur_img + i * col + pos);
+    int b = (color >> 16) & 0xFF;
+    int g = (color >> 8) & 0xFF;
+    int r = color & 0xFF;
     leds[row -1-i] = CRGB(r, g, b);
   }
 }

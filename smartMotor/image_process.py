@@ -40,24 +40,26 @@ def polarCoorImage(source):
     # cv2.waitKey(0)
     return string_img
 
-def extractImages(vidcap,isGif=False):
+def extractImages(vidcap):
     count = 0
     success,image = vidcap.read()
     success = True
     string = ""
     while success:
-        vidcap.set(cv2.CAP_PROP_POS_MSEC,(count*300))    # 1 frame per second
+        vidcap.set(cv2.CAP_PROP_POS_MSEC,(count*250))    # 1 frame per second
         success,image = vidcap.read()
         # print ('Read a new frame: ', success)
         if not success:
             break
+        print('Frame: ',count)
+        tmp= "unsigned int img"+str(count)+"[row][col] = "
+        string = string + tmp
         string = string + polarCoorImage(image)
+        string = string + ";\n"
         count = count + 1
-        string = string + ","
     # cut the last comma
-    string = string[:-1]
     print('Total frames: ',count)
-    return string,count
+    return string, count
 
 def checkFile(fileName):
     try:
@@ -103,11 +105,15 @@ if __name__ == "__main__":
         try:
             source = cv2.VideoCapture(fileName)
             file_string,frame_count = extractImages(source)
-            result = "const int total_frame="+str(frame_count)+";\n"
-            result = result+ "unsigned int img["+str(frame_count)+"][row][col] = {"
-            result = result+ file_string
-            result = result + "};"
-            f.write(result)
+            res = "const int total_frame="+str(frame_count)+";\n"
+            f.write(res)
+            f.write(file_string)
+            res = "unsigned int *frames["+str(frame_count)+"] = {"
+            for i in range(frame_count):
+                res = res + "&img"+str(i)+"[0][0],"
+            res=res[:-1]
+            res = res + "};"
+            f.write(res)
         except:
             print("Error in reading the video")
             clearAll(f)
