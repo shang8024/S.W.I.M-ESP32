@@ -34,12 +34,12 @@ boolean debugon = 1;
 
 boolean drawgrat = 1;
 
-#ifndef POLAR_IMAGE
+#ifndef POLAR_IMAGE // i.e, doesn't have polar
 const int row = 72;
 const int col = 69;
 const int total_frame = 0;
 //defining the polar coordinate image array
-int img[total_frame][row][col][3] = {};
+unsigned int img[total_frame][row][col] = {};
 #endif
 
 int state = 0;
@@ -94,7 +94,10 @@ void rawDisplay(){
 void displayPolarImages(){
   int pos = state * col / MAX_STATES;
   for (int i = 0; i < row; i++) {
-    leds[i] = CRGB(img[frame][i][pos][2], img[frame][i][pos][1], img[frame][i][pos][0]);
+    int r = (img[frame][i][pos][2] >> 16) & 0xFF;
+    int g = (img[frame][i][pos][1] >> 8) & 0xFF;
+    int b = img[frame][i][pos][0] & 0xFF;
+    leds[i] = CRGB(r, g, b);
   }
 }
 

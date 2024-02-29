@@ -21,8 +21,13 @@ def polarCoorImage(source):
 
 
     polar_image = np.ndarray.tolist(polar_image)
+    # for the smallest items, convert it from [r,g,b] to 0xRRGGBB
+    for i in range(len(polar_image)):
+        for j in range(len(polar_image[i])):
+                #convert [R,G,B] to 0xRRGGBB
+                polar_image[i][j] = (polar_image[i][j][0]<<16) + (polar_image[i][j][1]<<8) + polar_image[i][j][2]
     string_img = str(polar_image)
-    string_img = string_img.replace("]], [[", "}},\n{{")
+    string_img = string_img.replace("], [", "},\n{")
     string_img = string_img.replace("[", "{")
     string_img = string_img.replace("]", "}")
     #print(string_img)
@@ -77,7 +82,7 @@ if __name__ == "__main__":
         f = open(str(sys.argv[2])+".h", "w")
     else:
         f = open(str(fileName[:-4])+"_.txt", "w")
-    f.write("#define polarImage\n")
+    f.write("#define POLAR_IMAGE\n")
     f.write("const int row = 72;\n")
     f.write("const int col = 69;\n")
     # check if it is a image or gif or vedio by checking the extension
@@ -85,7 +90,7 @@ if __name__ == "__main__":
         try:
             source = cv2.imread(fileName, 1)
             f.write("const int total_frame=1;\n")
-            file_string = "int img[1][row][col][3] = {"+polarCoorImage(source)
+            file_string = "unsigned int img[1][row][col] = {"+polarCoorImage(source)
             file_string = file_string + "};"
             f.write(file_string)
         except:
@@ -95,10 +100,9 @@ if __name__ == "__main__":
         print(fileName)
         try:
             source = cv2.VideoCapture(fileName)
-            fileName = fileName[:-4]
             file_string,frame_count = extractImages(source)
             result = "const int total_frame="+str(frame_count)+";\n"
-            result = result+ "int img["+str(frame_count)+"][row][col][3] = {"
+            result = result+ "unsigned int img["+str(frame_count)+"][row][col] = {"
             result = result+ file_string
             result = result + "};"
             f.write(result)
