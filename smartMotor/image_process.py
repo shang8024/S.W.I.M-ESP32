@@ -6,7 +6,7 @@ def polarCoorImage(source):
 
     # --- ensure image is of the type float ---
     img = source.astype(np.float32)
-    # img = np.abs(img - 255) //why revert the color???
+    img = np.abs(img - 255) #why revert the color???
     # --- the following holds the square root of the sum of squares of the image dimensions ---
     # --- this is done so that the entire width/height of the original image is used to express the complete circular range of the resulting polar image ---
     value = np.sqrt(((img.shape[0] / 2.0) ** 2.0) + ((img.shape[1] / 2.0) ** 2.0))
@@ -38,7 +38,7 @@ def polarCoorImage(source):
     # print(len(polar_image[0]))
     # print(len(polar_image[0][0]))
 
-    # cv2.waitKey(0)
+    cv2.waitKey(0)
     return string_img
 
 def extractImages(vidcap):
@@ -47,7 +47,7 @@ def extractImages(vidcap):
     success = True
     string = ""
     while success:
-        vidcap.set(cv2.CAP_PROP_POS_MSEC,(count*250))    # 1 frame per second
+        vidcap.set(cv2.CAP_PROP_POS_MSEC,(count*100))    # 1 frame per second
         success,image = vidcap.read()
         # print ('Read a new frame: ', success)
         if not success:

@@ -83,8 +83,16 @@ void stateUpdate() {
     state += dir;
     dir_last = dir;
   }
-  if (state < 0) state = MAX_STATES - 1;
-  else if (state >= MAX_STATES) state = 0;
+  if (state < 0){
+    state = MAX_STATES - 1;
+    frame --;
+    if (frame < 0) frame = total_frame - 1;
+  }
+  else if (state >= MAX_STATES){
+    state = 0;
+    frame ++;
+    if (frame >= total_frame) frame = 0;
+  }
 }
 
 void rawDisplay(){
@@ -116,7 +124,7 @@ void setup() {
   pa = analogRead(36);  //real
   pb = analogRead(39);  //imaginary
   // pc=analogRead(34);//voltage
-  delayStart = millis();
+  // delayStart = millis();
 
   pcur = (pa > threshold) * 2 + (pb > threshold);
 }
@@ -126,11 +134,11 @@ void loop() {
 
   stateUpdate();
 
-  if (total_frame > 0 && (millis() - delayStart) > 10000) {
-    frame++;
-    if (frame >= total_frame) frame = 0;
-    delayStart = millis();
-  }
+  // if (total_frame > 0 && (millis() - delayStart) > 10000) {
+  //   frame++;
+  //   if (frame >= total_frame) frame = 0;
+  //   delayStart = millis();
+  // }
 
   if(total_frame == 0){
     rawDisplay();
