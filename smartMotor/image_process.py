@@ -2,7 +2,7 @@ import numpy as np
 import cv2
 import sys
 def polarCoorImage(source):
-    source = cv2.resize(source, (72, 72)) # Choose a size so that final image isn't cropped too much or too little, around 100x100 is good 
+    source = cv2.resize(source, (75, 75)) # Choose a size so that final image isn't cropped too much or too little, around 100x100 is good 
 
     # --- ensure image is of the type float ---
     img = source.astype(np.float32)
@@ -15,6 +15,8 @@ def polarCoorImage(source):
 
     polar_image = polar_image.astype(np.uint8)
     polar_image = polar_image[:, 3:75]
+    # rotate the image
+    polar_image = cv2.rotate(polar_image, cv2.ROTATE_90_COUNTERCLOCKWISE)
 
     cv2.imshow("Polar Image", polar_image)
     cv2.imshow("OG", source)
@@ -44,7 +46,7 @@ def extractImages(vidcap,isGif=False):
     success = True
     string = ""
     while success:
-        vidcap.set(cv2.CAP_PROP_POS_MSEC,(count*100))    # 1 frame per second
+        vidcap.set(cv2.CAP_PROP_POS_MSEC,(count*300))    # 1 frame per second
         success,image = vidcap.read()
         # print ('Read a new frame: ', success)
         if not success:
@@ -84,7 +86,7 @@ if __name__ == "__main__":
         f = open(str(fileName[:-4])+"_.txt", "w")
     f.write("#define POLAR_IMAGE\n")
     f.write("const int row = 72;\n")
-    f.write("const int col = 69;\n")
+    f.write("const int col = 75;\n")
     # check if it is a image or gif or vedio by checking the extension
     if fileName[-4:] == ".jpg" or fileName[-4:] == ".png":
         try:

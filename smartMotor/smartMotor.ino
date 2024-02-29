@@ -35,11 +35,11 @@ boolean debugon = 1;
 boolean drawgrat = 1;
 
 #ifndef POLAR_IMAGE // i.e, doesn't have polar
-const int row = 72;
-const int col = 69;
+const int row = 72; 
+const int col = 75;
 const int total_frame = 0;
-//defining the polar coordinate image array
-unsigned int img[total_frame][row][col] = {};
+//defining the polar coordinate image array, 75*75 pixels, with inner R 3
+unsigned int img[row][col] = {};
 #endif
 
 int state = 0;
@@ -94,10 +94,10 @@ void rawDisplay(){
 void displayPolarImages(){
   int pos = state * col / MAX_STATES;
   for (int i = 0; i < row; i++) {
-    int r = (img[frame][i][pos][2] >> 16) & 0xFF;
-    int g = (img[frame][i][pos][1] >> 8) & 0xFF;
-    int b = img[frame][i][pos][0] & 0xFF;
-    leds[i] = CRGB(r, g, b);
+    int b = (img[frame][i][pos] >> 16) & 0xFF;
+    int g = (img[frame][i][pos] >> 8) & 0xFF;
+    int r = img[frame][i][pos] & 0xFF;
+    leds[row -1-i] = CRGB(r, g, b);
   }
 }
 
@@ -123,7 +123,7 @@ void loop() {
 
   stateUpdate();
 
-  if (total_frame > 0 && (millis() - delayStart) > 1000) {
+  if (total_frame > 0 && (millis() - delayStart) > 10000) {
     frame++;
     if (frame >= total_frame) frame = 0;
     delayStart = millis();
