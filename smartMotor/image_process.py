@@ -94,8 +94,10 @@ if __name__ == "__main__":
         try:
             source = cv2.imread(fileName, 1)
             f.write("const int total_frame=1;\n")
-            file_string = "unsigned int img[1][row][col] = {"+polarCoorImage(source)
-            file_string = file_string + "};"
+            file_string = "unsigned int img0[row][col] = {"+polarCoorImage(source)
+            file_string = file_string + "};\n"
+            f.write(file_string)
+            file_string = "unsigned int *frames[1] = {&img0[0][0]};"
             f.write(file_string)
         except:
             print("Error in reading the image")
