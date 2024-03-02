@@ -108,7 +108,7 @@ void displayPolarImages(){
     int b = (color >> 16) & 0xFF;
     int g = (color >> 8) & 0xFF;
     int r = color & 0xFF;
-    leds[row -1-i] = CRGB(r, g, b);
+    leds[NUM_LEDS -1-i] = CRGB(r, g, b);
   }
 }
 

@@ -2,11 +2,27 @@ import numpy as np
 import cv2
 import sys
 def polarCoorImage(source):
-    source = cv2.resize(source, (75, 75)) # Choose a size so that final image isn't cropped too much or too little, around 100x100 is good 
+    # resize the image so that one of the larger dimension is 75
+    # fill the rest with black
+    if source.shape[0] > source.shape[1]:
+        source = cv2.resize(source, (int(75*source.shape[1]/source.shape[0]), 75))
+        # add black to the left and right, 255,255,255 is white
+        print(source.shape)
+        black = np.zeros((75, 75-source.shape[1], 3), dtype=np.uint8)
+        print(source.shape)
+        source = np.concatenate((black, source, black), axis=1)
+    else:
+        source = cv2.resize(source, (75, int(75*source.shape[0]/source.shape[1])))
+        # add black to the top and bottom
+        black = np.zeros((75-source.shape[0], 75, 3), dtype=np.uint8)
+        source = np.concatenate((black, source, black), axis=0)
+    # cut the image from the center to 75x75
+    source = source[int((source.shape[0]-75)/2):int((source.shape[0]+75)/2), int((source.shape[1]-75)/2):int((source.shape[1]+75)/2)]
+    #source = cv2.resize(source, (75, 75)) # Choose a size so that final image isn't cropped too much or too little, around 100x100 is good 
 
     # --- ensure image is of the type float ---
     img = source.astype(np.float32)
-    img = np.abs(img - 255) #why revert the color???
+    #img = np.abs(img - 255) why revert the color???
     # --- the following holds the square root of the sum of squares of the image dimensions ---
     # --- this is done so that the entire width/height of the original image is used to express the complete circular range of the resulting polar image ---
     value = np.sqrt(((img.shape[0] / 2.0) ** 2.0) + ((img.shape[1] / 2.0) ** 2.0))
@@ -47,7 +63,7 @@ def extractImages(vidcap):
     success = True
     string = ""
     while success:
-        vidcap.set(cv2.CAP_PROP_POS_MSEC,(count*100))    # 1 frame per second
+        vidcap.set(cv2.CAP_PROP_POS_MSEC,(count*300))    # 1 frame per second
         success,image = vidcap.read()
         # print ('Read a new frame: ', success)
         if not success:
