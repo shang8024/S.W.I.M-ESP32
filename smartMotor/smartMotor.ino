@@ -28,6 +28,9 @@ CRGB leds[NUM_LEDS];
 int pa = 0;
 int pb = 0;
 int pc = 0;
+int paraw = 0;
+int pbraw = 0;
+int pcraw = 0;
 
 //boolean debugon = 0;
 boolean debugon = 1;
@@ -48,6 +51,8 @@ int frame = 0;
 
 unsigned long delayStart = 0;
 
+int mode = 1; // 0 for data, 1 for image
+
 
 
 
@@ -66,15 +71,31 @@ int dir_last = 0;
 int plast = 0;
 int pcur = 0;
 
+void rawDataDisplay(){
+  // Show it working as a scientific data visualizer to visualize the raw output of the complex-valued encoder:
+  // real is red, green is imaginary, and blue is the motor output.
+  paraw = analogRead(36);  //real
+  pbraw = analogRead(39);  //imaginary
+  pcraw = analogRead(34);//voltage
+
+  pa = map(paraw, 0, 4095, 0, NUM_LEDS);
+  pb = map(pbraw, 0, 4095, 0, NUM_LEDS);
+  pc = map(pcraw, 0, 4095, 0, NUM_LEDS);
+
+  leds[pa] = CRGB(255, 0, 0);
+  leds[pb] = CRGB(0, 255, 0);
+  leds[pc] = CRGB(0, 0, 255);
+}
+
 void stateUpdate() {
   //store the previous pulse
   plast = pcur;
 
-  pa = analogRead(36);  //real
-  pb = analogRead(39);  //imaginary
-  // pc=analogRead(34);//voltage
+  paraw = analogRead(36);  //real
+  pbraw = analogRead(39);  //imaginary
+  // pcraw=analogRead(34);//voltage
 
-  pcur = (pa > threshold) * 2 + (pb > threshold);
+  pcur = (paraw > threshold) * 2 + (pbraw > threshold);
   int dir = QEM[plast * 4 + pcur];
   // if we missed a pulse, we need to guess the direction, by previous direction
   if (dir == 0) return;
@@ -95,7 +116,7 @@ void stateUpdate() {
   }
 }
 
-void rawDisplay(){
+void testDisplay(){
   int pos = state * 72 / MAX_STATES;
   leds[pos] = CRGB(255, 255, 255);
 }
@@ -121,18 +142,20 @@ void setup() {
   FastLED.addLeds<WS2812, DATA_PIN, COLOR_ORDER>(leds, NUM_LEDS);
   FastLED.setBrightness(BRIGHTNESS);
 
-  pa = analogRead(36);  //real
-  pb = analogRead(39);  //imaginary
-  // pc=analogRead(34);//voltage
+  paraw = analogRead(36);  //real
+  pbraw = analogRead(39);  //imaginary
+  // pcraw=analogRead(34);//voltage
   // delayStart = millis();
 
-  pcur = (pa > threshold) * 2 + (pb > threshold);
+  pcur = (paraw > threshold) * 2 + (pbraw > threshold);
 }
 
 void loop() {
   FastLED.clearData();
-
-  stateUpdate();
+  if (mode = 0){
+    rawDataDisplay();
+  }else{
+    stateUpdate();
 
   // if (total_frame > 0 && (millis() - delayStart) > 10000) {
   //   frame++;
@@ -140,20 +163,20 @@ void loop() {
   //   delayStart = millis();
   // }
 
-  if(total_frame == 0){
-    rawDisplay();
-  }else{
-    displayPolarImages();
+    if(total_frame == 0){
+      testDisplay();
+    }else{
+      displayPolarImages();
+    }
   }
 
 
 
-
-  // if (drawgrat) {
-  //   for (int g = 0; g < 72; g = g + 11) {
-  //     leds[g + 2] |= CRGB(75, 0, 75);  // center the grat
-  //   }
-  // }
+  if (drawgrat) {
+    for (int g = 0; g < 72; g = g + 11) {
+      leds[g + 2] |= CRGB(75, 0, 75);  // center the grat
+    }
+  }
 
 
   FastLED.show();
