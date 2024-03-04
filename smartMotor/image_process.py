@@ -102,7 +102,7 @@ if __name__ == "__main__":
     if len(sys.argv) > 2 and sys.argv[2] is not None:
         f = open(str(sys.argv[2])+".h", "w")
     else:
-        f = open(str(fileName[:-4])+"_.txt", "w")
+        f = open("polarImage.h", "w")
     f.write("#define POLAR_IMAGE\n")
     f.write("const int row = 72;\n")
     f.write("const int col = 75;\n")
