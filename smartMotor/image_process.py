@@ -19,7 +19,8 @@ def polarCoorImage(source):
     # cut the image from the center to 75x75
     source = source[int((source.shape[0]-75)/2):int((source.shape[0]+75)/2), int((source.shape[1]-75)/2):int((source.shape[1]+75)/2)]
     #source = cv2.resize(source, (75, 75)) # Choose a size so that final image isn't cropped too much or too little, around 100x100 is good 
-
+    #horizontal flip the image
+    source = cv2.flip(source, 1)
     # --- ensure image is of the type float ---
     img = source.astype(np.float32)
     #img = np.abs(img - 255) why revert the color???
