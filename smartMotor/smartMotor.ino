@@ -25,6 +25,9 @@ CRGB leds[NUM_LEDS];
 
 
 // defining variables
+int pal = 0;
+int pbl = 0;
+int pcl = 0;
 int pa = 0;
 int pb = 0;
 int pc = 0;
@@ -51,7 +54,7 @@ int frame = 0;
 
 unsigned long delayStart = 0;
 
-int mode = 1; // 0 for data, 1 for image
+int mode = 0; // 0 for data, 1 for image
 
 
 
@@ -71,20 +74,38 @@ int dir_last = 0;
 int plast = 0;
 int pcur = 0;
 
+void rawLEDs(int last, int cur, int r, int g, int b) {
+  leds[cur] |= CRGB(r, g, b);
+  if (last > cur) {
+    for (int i = cur; i < last; i++) {
+      leds[i] |= CRGB(r, g, b);
+    }
+  } else if (last < cur) {
+    for (int i = last; i < cur; i++) {
+      leds[i] |= CRGB(r, g, b);
+    }
+  }
+
+}
+
 void rawDataDisplay(){
+  pal = pa;
+  pbl = pb;
+  pcl = pc;
+
   // Show it working as a scientific data visualizer to visualize the raw output of the complex-valued encoder:
   // real is red, green is imaginary, and blue is the motor output.
   paraw = analogRead(36);  //real
   pbraw = analogRead(39);  //imaginary
   pcraw = analogRead(34);//voltage
 
-  pa = map(paraw, 0, 4095, 0, NUM_LEDS);
-  pb = map(pbraw, 0, 4095, 0, NUM_LEDS);
-  pc = map(pcraw, 0, 4095, 0, NUM_LEDS);
+  pa = map(paraw, 0, 3000, 0, NUM_LEDS - 1);
+  pb = map(pbraw, 0, 3000, 0, NUM_LEDS - 1);
+  pc = map(pcraw, 0, 3000, 0, NUM_LEDS - 1);
 
-  leds[pa] = CRGB(255, 0, 0);
-  leds[pb] = CRGB(0, 255, 0);
-  leds[pc] = CRGB(0, 0, 255);
+  rawLEDs(pal, pa, 255, 0, 0);
+  rawLEDs(pbl, pb, 0, 255, 0);
+  rawLEDs(pcl, pc, 0, 0, 255);
 }
 
 void stateUpdate() {
@@ -118,7 +139,7 @@ void stateUpdate() {
 
 void testDisplay(){
   int pos = state * 72 / MAX_STATES;
-  leds[pos] = CRGB(255, 255, 255);
+  leds[pos] |= CRGB(255, 255, 255);
 }
 
 void displayPolarImages(){
@@ -144,7 +165,7 @@ void setup() {
 
   paraw = analogRead(36);  //real
   pbraw = analogRead(39);  //imaginary
-  // pcraw=analogRead(34);//voltage
+  pcraw = analogRead(34);//voltage
   // delayStart = millis();
 
   pcur = (paraw > threshold) * 2 + (pbraw > threshold);
@@ -152,7 +173,7 @@ void setup() {
 
 void loop() {
   FastLED.clearData();
-  if (mode = 0){
+  if (mode == 0){
     rawDataDisplay();
   }else{
     stateUpdate();
