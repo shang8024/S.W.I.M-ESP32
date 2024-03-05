@@ -21,7 +21,7 @@ CRGB leds[NUM_LEDS];
 #define threshold 1023
 #define MAX_STATES 484
 
-#define BRIGHTNESS 31
+#define BRIGHTNESS 10
 
 
 // defining variables
@@ -54,7 +54,7 @@ int frame = 0;
 
 unsigned long delayStart = 0;
 
-int mode = 0; // 0 for data, 1 for image
+int mode = 0; // 0 for data, 1 for image, 2 for three phase
 
 
 
@@ -99,13 +99,37 @@ void rawDataDisplay(){
   pbraw = analogRead(39);  //imaginary
   pcraw = analogRead(34);//voltage
 
-  pa = map(paraw, 0, 3000, 0, NUM_LEDS - 1);
-  pb = map(pbraw, 0, 3000, 0, NUM_LEDS - 1);
-  pc = map(pcraw, 0, 3000, 0, NUM_LEDS - 1);
+  pa = map(paraw, 0, 4095, 0, NUM_LEDS - 1);
+  pb = map(pbraw, 0, 4095, 0, NUM_LEDS - 1);
+  pc = map(pcraw, 0, 4095, 0, NUM_LEDS - 1);
 
   rawLEDs(pal, pa, 255, 0, 0);
   rawLEDs(pbl, pb, 0, 255, 0);
   rawLEDs(pcl, pc, 0, 0, 255);
+}
+
+void threePhaseDisplay(){
+  pal = pa;
+  pbl = pb;
+  pcl = pc;
+
+  paraw = analogRead(36);  //real
+  pbraw = analogRead(39);  //imaginary
+  pcraw = analogRead(34);//voltage
+  // apply the inverse Edith Clarke transform to the complex-valued encoder with an assumed zero third component
+  long x = sqrt(2/3) * paraw;
+  long y = sqrt(2/3) * (sqrt(3) * pbraw - paraw) / 2;
+  long z = sqrt(2/3) * (-sqrt(3) * pcraw - paraw) / 2;
+
+  // map the three phase values to the LED strip
+  pa = map((int)x, -2500, 2500, 0, NUM_LEDS - 1);
+  pb = map((int)y, -2500, 2500, 0, NUM_LEDS - 1);
+  pc = map((int)z, -2500, 2500, 0, NUM_LEDS - 1);
+
+  rawLEDs(pal, pa, 255, 0, 0);
+  rawLEDs(pbl, pb, 0, 255, 0);
+  rawLEDs(pcl, pc, 0, 0, 255);
+
 }
 
 void stateUpdate() {
@@ -175,6 +199,8 @@ void loop() {
   FastLED.clearData();
   if (mode == 0){
     rawDataDisplay();
+  }else if (mode == 2){
+    threePhaseDisplay();
   }else{
     stateUpdate();
 
