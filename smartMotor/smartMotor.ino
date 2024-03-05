@@ -21,7 +21,7 @@ CRGB leds[NUM_LEDS];
 #define threshold 1023
 #define MAX_STATES 484
 
-#define BRIGHTNESS 10
+#define BRIGHTNESS 7
 
 
 // defining variables
@@ -54,7 +54,7 @@ int frame = 0;
 
 unsigned long delayStart = 0;
 
-int mode = 0; // 0 for data, 1 for image, 2 for three phase
+int mode = 1; // 0 for data, 1 for image, 2 for three phase
 
 
 
@@ -101,6 +101,7 @@ void rawDataDisplay(){
 
   pa = map(paraw, 0, 3000, 0, NUM_LEDS - 1);
   pb = map(pbraw, 0, 3000, 0, NUM_LEDS - 1);
+  pc = map(pcraw, 0, 3000, 0, NUM_LEDS - 1);
 
   // rawLEDs(pal, pa, 255, 0, 0);
   // rawLEDs(pbl, pb, 0, 255, 0);
